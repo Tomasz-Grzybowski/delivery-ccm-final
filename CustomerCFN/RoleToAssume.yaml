@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: "2010-09-09"
+#################################################################
+###     CloudFormation Script created by Tomasz Grzybowski.   ###
+### This Role contains policies that allow full Administrator ###
+###    access to Service Catalog and can only be assumed by   ###
+###           Cloud Capacity Management Application.          ###
+###        PLEASE DO NOT CHANGE ANYTHING IN THIS SCRIPT       ###
+###                      EXCEPT OF TAGS                       ###
+#################################################################
+Description: >
+  This CloudFormation script contains IAM Role to be assumed by Cloud Capacity Manager (CCM). Please do not change CCM Access Code value or IAM Role name.
+  Feel free to change Stack name or stack tags to suit your organisation naming convention. This stack does not generate any cost.
+Parameters:
+  CCMAccessCode:
+    Type: String
+    Description: Please do not change this value. This unique Access Code has been generated just for you. Click [NEXT].
+Resources:
+  RoleAssumed:
+    Type: "AWS::IAM::Role" # Resouce type
+    Properties:
+      RoleName: "Cloud-Capacity-Manager-5uWFMs" # Role Name / cannot be changed
+      Description: "Role to be assumed by Cloud Capacity Manager. Do not delete if you still use the application."
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AWSServiceCatalogAdminFullAccess" # AWS managed policy (full Service Catalog Admin access)
+      MaxSessionDuration: 43200 # maximum duration (12 hours - do not change)
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS:
+                - "arn:aws:iam::575189954257:root" # Web application AWS Principal, cannot be changed
+            Action:
+              - "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                sts:ExternalId:
+                  - !Sub ${CCMAccessCode} # External ID added for additional security (Cross-account confused deputy prevention), cannot be changed
+      Tags: # TAGS CAN BE CHANGED
+        - Key: "CreatedBy"
+          Value: "CloudCapacityManager"
+  RolePolicies:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: CloudCapacityManagerPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: "Organizations"
+          Effect: Allow
+          Action:
+            - "servicecatalog:*"
+            - "organizations:CreateAccount"
+            - "organizations:DescribeAccount"
+            - "organizations:DescribeOrganizationalUnit"
+            - "organizations:InviteAccountToOrganization"
+            - "organizations:ListAccounts"
+            - "organizations:ListAccountsForParent"
+            - "organizations:ListTagsForResource"
+            - "organizations:RemoveAccountFromOrganization"
+            - "organizations:TagResource"
+            - "organizations:UntagResource"
+          Resource: "*"
+        - Sid: "ServiceCatalog"
+          Effect: Allow
+          Action: "servicecatalog:*"
+          Resource: "*"
+        - Sid: "IAM"
+          Effect: Allow
+          Action:
+            - "iam:CreateUser"
+            - "iam:DeleteUser"
+            - "iam:GetUser"
+            - "iam:ListUsers"
+            - "iam:TagUser"
+            - "iam:UntagUser"
+          Resource: "*"
+      Roles:
+      - !Ref RoleAssumed

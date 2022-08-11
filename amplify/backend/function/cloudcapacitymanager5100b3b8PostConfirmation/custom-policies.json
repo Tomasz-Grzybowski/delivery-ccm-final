@@ -1,0 +1,6 @@
+[
+  {
+    "Action": ["dynamodb:PutItem"],
+    "Resource": ["arn:aws:dynamodb:eu-west-2:575189954257:table/CCMAccounts-dev"]
+  }
+]

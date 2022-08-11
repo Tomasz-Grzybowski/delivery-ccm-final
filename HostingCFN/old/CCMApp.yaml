@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Amplify App resouce to host CCM
+Parameters:
+#tags are already in the main template
+  AccessToken:
+    Default: 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
+    Type: String
+    Description: Value to be used for Name tag
+  AppName:
+    Default: CCMApp
+    Type: String
+    Description: Application name for Amplify
+  AppDescription:
+    Default: Cloud Capacity Manager Amplify Application
+    Type: String
+    Description: Application description for Amplify
+  RepoName:
+    Default: Tomasz-Grzybowski/cloud-capacity-manager
+    Type: String
+    Description: CCM Application repository
+Resources:
+  AmplifyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - amplify.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        -  arn:aws:iam::aws:policy/AdministratorAccess-Amplify
+  CCMAmplifyApp:
+    Type: AWS::Amplify::App
+    Properties: 
+      AccessToken: !Ref AccessToken
+      Description: !Ref AppDescription
+      EnableBranchAutoDeletion: True
+      IAMServiceRole: !Ref AmplifyRole
+      Name: !Ref AppName
+      Repository: !RepoName
+      Tags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  securityGroup-EFSSG
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+  AmplifyDomain:
+    Type: AWS::Amplify::Domain
+    Properties: 
+      AppId: !GetAtt CCMAmplifyApp.AppId
+      DomainName: !Ref DomainName
+      EnableAutoSubDomain: False
+      SubDomainSettings: 
+        - BranchName: main
+          Prefix: app

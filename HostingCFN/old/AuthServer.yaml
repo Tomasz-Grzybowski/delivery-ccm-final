@@ -1,0 +1,878 @@
+AWSTemplateFormatVersion: 2010-09-09
+#################################################
+#Stack name: Cloud-Capacity-Manager
+#################################################
+Description: >
+  Version: 09042022_1940
+  Author: Tomasz Grzybowski
+  Project: Developing Auth application for high level resource provision and access control for cloud computing
+  Application name: Cloud Capacity Manager
+  Stack: Auth Server
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "VPC Configuration"
+        Parameters:
+          - CCMVPCCIDR
+      - Label:
+          default: "Subnets Configuration"
+        Parameters:
+          - PublicSubnetACIDR
+          - PublicSubnetBCIDR
+          - PrivateSubnetACIDR
+          - PrivateSubnetBCIDR
+      - Label:
+          default: "Route53 Configuration"
+        Parameters:
+          - DomainName
+      - Label:
+          default: "KeyPair Configuration"
+        Parameters:
+          - AuthServerKeyPair
+      - Label:
+          default: "Amplify Configuration"
+        Parameters:
+          - AppName
+          - AppDescription
+          - AccessToken
+          - RepoName
+    ParameterLabels:
+      CCMVPCCIDR:
+        default: "IP CIDR block for the VPC"
+      PublicSubnetACIDR:
+        default: "IP CIDR block for the Public Subnet A"
+      PublicSubnetBCIDR:
+        default: "IP CIDR block for the Public Subnet B"
+      PrivateSubnetACIDR:
+        default: "IP CIDR block for the Auth Server Subnet A"
+      PrivateSubnetBCIDR:
+        default: "IP CIDR block for the Auth Server Subnet B"
+      DomainName:
+        default: "Specify a domain name for your web application, i.e. mywebapp.com"
+      AuthServerKeyPair:
+        default: "Choose existing keypair to be used for Private Instances"
+      AccessToken:
+        default: "Personal access token for GitHub"
+      AppName:
+        default: "Application name for Amplify"
+      AppDescription:
+        default: "Application description for Amplify"
+      RepoName:
+        default: "CCM Application repository"
+Parameters:
+  AccessToken:
+    Default: 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
+    Type: String
+    Description: Personal access token for GitHub
+  AppName:
+    Default: CCMApp
+    Type: String
+    Description: Application name for Amplify
+  AppDescription:
+    Default: Cloud Capacity Manager Amplify Application
+    Type: String
+    Description: Application description for Amplify
+  RepoName:
+    Default: Tomasz-Grzybowski/cloud-capacity-manager
+    Type: String
+    Description: CCM Application repository
+  NameTagPrefix:
+    Default: 'cloud-capacity-manager'
+    Type: String
+    Description: Value to be used for Name tag
+  Customer:
+    Default: 'CU Coventry'
+    Type: String
+    Description: Value to be used for Customer tag
+  Task:
+    Default: 'Final Project'
+    Type: String
+    Description: Value to be used for Task tag
+  CCMVPCCIDR:
+    Default: '192.168.150.0/16'
+    Description: (i.e. 10.0.0.0/16)
+    Type: String
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  PublicSubnetACIDR:
+    Default: '192.168.150.0/24'
+    Description: (i.e. 10.0.0.0/24)
+    Type: String
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  PublicSubnetBCIDR:
+    Default: '192.168.151.0/24'
+    Description: (i.e. 10.0.1.0/24)
+    Type: String
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  PrivateSubnetACIDR:
+    Default: '192.168.152.0/24'
+    Description: (i.e. 10.0.2.0/24)
+    Type: String
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  PrivateSubnetBCIDR:
+    Default: '192.168.153.0/24'
+    Description: (i.e. 10.0.3.0/24)
+    Type: String
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  DomainName:
+    Default: 'ccm.tomasz.live'
+    Description: (FQDM, i.e. CCM.tk)
+    Type: String
+  AuthServerKeyPair:
+    Default: AuthServerKeyPair
+    Description: Name of key for use in private subnet
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Select an existing keypair for use with Auth Server
+Mappings:
+  AWSRegionToAMI:
+    us-east-1:
+      'ubuntu': ami-0db6c6238a40c0681
+    us-east-2:
+      'ubuntu': ami-03b6c8bd55e00d5ed
+    us-west-1:
+      'ubuntu': ami-0f5868930cb63c89c
+    us-west-2:
+      'ubuntu': ami-038a0ccaaedae6406
+    eu-west-1:
+      'ubuntu': ami-0213344887e47003a
+    eu-west-2:
+      'ubuntu': ami-0add0a5a0cf9afc6c
+    ap-southeast-1:
+      'ubuntu': ami-0012ffabeb7413479
+    ap-southeast-2:
+      'ubuntu': ami-03ec1fe05b3849c74
+    ap-northeast-2:
+      'ubuntu': ami-0be9734c9e68b99f4
+    ap-northeast-1:
+      'ubuntu': ami-015f1a68ce825a8d2
+    sa-east-1:
+      'ubuntu': ami-0312c74c38dc7bae6
+Resources:
+
+#################################################
+# Route53
+#################################################
+
+  CCMHostedZone: 
+    Type: "AWS::Route53::HostedZone"
+    Properties: 
+     HostedZoneConfig: 
+        Comment: 'Hosted zone for Cloud Capacity Manager website'
+      Name: !Ref DomainName
+      HostedZoneTags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  route53-CCMHostedZone
+        - Key: 
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+# A Record
+  CCMARecord:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !Ref CCMHostedZone
+      RecordSets:
+      - Name: !Join ['', [auth.,!Ref DomainName]]
+        Type: A
+        AliasTarget:
+          HostedZoneId: !GetAtt 'AuthServerLB.CanonicalHostedZoneID'
+          DNSName: !GetAtt 'AuthServerLB.DNSName'
+
+#################################################
+# Lambda
+#################################################
+
+  LambdaAssumeRoleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: AllowAssumeRole
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "sts:AssumeRole"
+                Resource: "arn:aws:iam::*:role/Cloud-Capacity-Manager-5uWFMs"
+        - PolicyName: AllowLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                Resource: "arn:aws:logs:eu-west-2:${AWS::AccountId}:*"
+              - Effect: "Allow"
+                Action:
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "arn:aws:logs:eu-west-2:${AWS::AccountId}:log-group:/aws/lambda/AssumeRoleForCapacityManager:*"
+  LambdaAssumeRoleFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: 
+      Role: !Ref LambdaAssumeRoleRole
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          import boto3
+          import json
+          import datetime
+          from json import JSONEncoder
+
+          class DateTimeEncoder(JSONEncoder):
+          #Override the default method
+          def default(self, obj):
+            if isinstance(obj, (datetime.date, datetime.datetime)):
+              return obj.isoformat()
+
+          def lambda_handler(event, context):
+            event = json.loads(event['body'])
+            sts_connection = boto3.client('sts')
+            acct_b = sts_connection.assume_role(
+              RoleArn=f"arn:aws:iam::{event['accountId']}:role/Cloud-Capacity-Manager-5uWFMs",
+              RoleSessionName="cross_acct_lambda",
+              ExternalId= event['externalId']
+            )
+    
+          ACCESS_KEY = acct_b['Credentials']['AccessKeyId']
+          SECRET_KEY = acct_b['Credentials']['SecretAccessKey']
+          SESSION_TOKEN = acct_b['Credentials']['SessionToken']
+
+          # create service client using the assumed role credentials
+          client = boto3.client(
+            'servicecatalog',
+            aws_access_key_id=ACCESS_KEY,
+            aws_secret_access_key=SECRET_KEY,
+            aws_session_token=SESSION_TOKEN,
+          )
+          response = DateTimeEncoder().encode(client.list_portfolios())
+
+          return response
+      Description: Generic Lambda function to assume a role from the customer account
+      TracingConfig:
+        Mode: Active
+#################################################
+# API Gateway - HTTP
+#################################################
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: Lambda Proxy
+      Description: Lambda proxy using quick create
+      ProtocolType: HTTP
+      Target: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaAssumeRoleFunction}/invocations'
+ 
+#################################################
+# VPC
+#################################################
+
+# VPC
+  CCMVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref CCMVPCCIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  vpc-CCMVPC
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+
+# Internet gateway
+  CCMAuthIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  internetGateway-CCMAuthIGW
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref CCMAuthIGW
+      VpcId: !Ref CCMVPC
+
+#################################################
+# Subnets
+#################################################
+
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref PrivateSubnetACIDR
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref CCMVPC
+      Tags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  subnet-PrivateSubnetA
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref PrivateSubnetBCIDR
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref CCMVPC
+      Tags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  subnet-PrivateSubnetB
+        - Key: Customer
+          Value: !Ref Customer
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref PublicSubnetACIDR
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref CCMVPC
+      Tags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  subnet-PublicSubnetA
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref PublicSubnetBCIDR
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref CCMVPC
+      Tags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  subnet-PublicSubnetB
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+
+#################################################
+# VPCRouteTables
+#################################################
+
+  PublicRT:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref CCMVPC
+      Tags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  routeTable-PublicRT
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+
+  PrivateRT:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref CCMVPC
+      Tags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  routeTable-PrivateRT
+        - Key: Customer
+          Value: !Ref Customer
+
+  PublicSubnetARouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnetA
+      RouteTableId: !Ref PublicRT
+
+  PublicSubnetBRouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnetB
+      RouteTableId: !Ref PublicRT
+
+  PrivateSubnetARouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnetA
+      RouteTableId: !Ref PrivateRT
+
+  PrivateSubnetBRouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnetB
+      RouteTableId: !Ref PrivateRT
+
+  PublicRoute:
+    DependsOn: InternetGatewayAttachment
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref PublicRT
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref CCMAuthIGW
+
+#################################################
+# EFS
+#################################################
+
+# EFS Security Group
+  EFSSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allows NFS Traffic for members
+      GroupName: EFSSG
+      VpcId: !Ref CCMVPC
+      Tags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  securityGroup-EFSSG
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+
+# EFS Security Group Ingress
+  EFSSGIngress:
+    DependsOn: EFSSG
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref EFSSG
+      SourceSecurityGroupId: !Ref EFSSG
+      Description: NFS traffic
+      IpProtocol: "tcp"
+      FromPort: 2049
+      ToPort: 2049
+
+# EFS File System
+  EFSFileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      BackupPolicy:
+        Status: ENABLED
+      PerformanceMode: generalPurpose
+      ThroughputMode: bursting
+      FileSystemTags: 
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  EFS-FileSystem
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+
+# EFS Mount Targets
+  MountTargetA:
+    Type: AWS::EFS::MountTarget
+    Properties: 
+      FileSystemId: !Ref EFSFileSystem
+      SecurityGroups: 
+        - !Ref EFSSG
+      SubnetId: !Ref PrivateSubnetA
+  MountTargetB:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SecurityGroups:
+        - !Ref EFSSG
+      SubnetId: !Ref PrivateSubnetB
+
+#################################################
+# EC2 - AutoScaling Group, Load Balancer
+#################################################
+
+# Auth Server Security Group
+  AuthServerSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: AuthServerSG
+      GroupDescription: Allows remote access to Auth Servers
+      VpcId: !Ref CCMVPC
+      SecurityGroupIngress:
+        - FromPort: 80
+          ToPort: 80
+          IpProtocol: "tcp"
+          Description: "HTTP traffic"
+          CidrIp: 0.0.0.0/0
+        - FromPort: 443
+          ToPort: 443
+          IpProtocol: "tcp"
+          Description: "HTTPS traffic"
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  securityGroup-AuthServerSG
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+
+# Auth Server Launch Template
+  AuthServerLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: AuthServerLaunchTemplate
+      LaunchTemplateData:
+        DisableApiTermination: true
+        ImageId: !FindInMap 
+          - AWSRegionToAMI
+          - !Ref 'AWS::Region'
+          - 'ubuntu'
+        InstanceType: t2.micro
+        BlockDeviceMappings: 
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeSize: 30
+              VolumeType: gp2
+              DeleteOnTermination: true
+              Encrypted: false
+        KeyName: !Ref AuthServerKeyPair
+        SecurityGroupIds:
+          - !GetAtt AuthServerSG.GroupId
+          - !GetAtt EFSSG.GroupId
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash -xe
+            apt-get update -y && sudo apt-get upgrade -y
+            apt-get install apache2 php libapache2-mod-php php-mysql php-curl nfs-common stress -y
+            cd /
+            chown -R www-data:www-data /var/www
+            service apache2 restart
+            mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport \
+            ${EFSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ var/www/html
+            bash -c 'echo "printf \"%b\" \"\e[1;34m\nThis Auth server is a property of CCM Ltd. If \
+            you are unauthorised to use it, please leave immediately.\n\nAll actions are being logged and \
+            monitored. Malicious, harmful and suspicious actions will be reported and prosecuted.\n\e[0m\"" \
+            >> /etc/update-motd.d/00-header'
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value:
+                  !Join
+                  - '-'
+                  - -  !Ref NameTagPrefix
+                    -  ec2Instance-AuthServer
+              - Key: Customer
+                Value: !Ref Customer
+          - ResourceType: volume
+            Tags:
+              - Key: Name
+                Value:
+                  !Join
+                  - '-'
+                  - -  !Ref NameTagPrefix
+                    -  ebsVolume-AuthServer
+              - Key: Customer
+                Value: !Ref Customer
+              - Key: Task
+                Value: !Ref Task
+
+# Auto Scaling Group   
+  AuthServerASG:
+    DependsOn: PrivateARoute
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Properties:
+      AvailabilityZones:
+        - !Select [0, !GetAZs ""]
+        - !Select [1, !GetAZs ""]
+      LaunchTemplate:
+        LaunchTemplateId: !Ref AuthServerLaunchTemplate
+        Version: !GetAtt AuthServerLaunchTemplate.LatestVersionNumber
+      DesiredCapacity: '2'
+      MinSize: '2'
+      MaxSize: '4'
+      HealthCheckGracePeriod: 300
+      TargetGroupARNs: 
+        - !Ref CCMAuthServerTG
+      VPCZoneIdentifier:
+        - !Ref PrivateSubnetA
+        - !Ref PrivateSubnetB
+      Tags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  ASG-AuthServerASG
+          PropagateAtLaunch: true
+        - Key: Customer
+          Value: !Ref Customer
+          PropagateAtLaunch: true
+        - Key: Task
+          Value: !Ref Task
+
+# Scaling Policies
+
+  AuthServerScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AuthServerASG
+      Cooldown: '60'
+      ScalingAdjustment: 1
+  AuthServerScaleDownPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AuthServerASG
+      Cooldown: '60'
+      ScalingAdjustment: -1
+  CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale-up if CPU > 90% for 10 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 90
+      AlarmActions: [!Ref 'AuthServerScaleUpPolicy']
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref AuthServerASG
+      ComparisonOperator: GreaterThanThreshold
+  CPUAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale-down if CPU < 70% for 10 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 70
+      AlarmActions: [!Ref 'AuthServerScaleDownPolicy']
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value: !Ref AuthServerASG
+      ComparisonOperator: LessThanThreshold
+
+# Application Load Balancer
+  AuthServerLB:
+    DependsOn: InternetGatewayAttachment
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties: 
+      Name: CCMAuthServerLB
+      Scheme: internet-facing
+      SecurityGroups: 
+        - !Ref AuthServerSG
+      Subnets: 
+        - !Ref PublicSubnetA
+        - !Ref PublicSubnetB
+      Tags: 
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  ELB-AuthServerLB
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+      Type: application
+
+# Load Balancer Target Group
+  CCMAuthServerTG:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties: 
+      Name: CCMAuthServerTG
+      Port: 443
+      Protocol: HTTPS
+      VpcId: !Ref CCMVPC
+      Tags: 
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  ELBTargetGroup-CCMAuthServerTG
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+
+  SSLCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties: 
+      DomainName: 
+        !Join 
+        - ''
+        - - '*.'
+          - !Ref DomainName
+      DomainValidationOptions: 
+        -   DomainName: !Ref DomainName
+            HostedZoneId: !Ref CCMHostedZone
+      Tags: 
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  ACM-SSLCertificate
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+      ValidationMethod: DNS
+  HTTPlistener:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      DefaultActions:
+        - Type: "redirect"
+          RedirectConfig:
+            Protocol: "HTTPS"
+            Port: 443
+            Host: "#{host}"
+            Path: "/#{path}"
+            Query: "#{query}"
+            StatusCode: "HTTP_301"
+      LoadBalancerArn: !Ref AuthServerLB
+      Port: 80
+      Protocol: "HTTP"
+  HTTPSlistener:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      DefaultActions:
+        - Type: "forward"
+          ForwardConfig:
+            TargetGroups:
+              - TargetGroupArn: !Ref CCMAuthServerTG
+      LoadBalancerArn: !Ref AuthServerLB
+      Port: 443
+      Protocol: "HTTPS"
+#######################################################
+### Amplify 
+#######################################################
+  AmplifyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - amplify.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        -  arn:aws:iam::aws:policy/AdministratorAccess-Amplify
+  CCMAmplifyApp:
+    Type: AWS::Amplify::App
+    Properties: 
+      AccessToken: !Ref AccessToken
+      Description: !Ref AppDescription
+      EnableBranchAutoDeletion: True
+      IAMServiceRole: !Ref AmplifyRole
+      Name: !Ref AppName
+      Repository: !RepoName
+      Tags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  securityGroup-EFSSG
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+  AmplifyDomain:
+    Type: AWS::Amplify::Domain
+    Properties: 
+      AppId: !GetAtt CCMAmplifyApp.AppId
+      DomainName: !Ref DomainName
+      EnableAutoSubDomain: False
+      SubDomainSettings: 
+        - BranchName: main
+          Prefix: app
+Outputs:
+  AuthServerHostname:
+    Description: URL address of Auth Server
+    Value: !Join ['', [https://auth., !Ref DomainName]]
+  AuthServerHostname:
+    Description: URL address of Auth Server
+    Value: !Join ['', [https://app., !Ref DomainName]]
+  NameServer1:
+    Description: Name server to be used with freenom.com
+    Value: !Select [0, !GetAtt CCMHostedZone.NameServers]
+  NameServer2:
+    Description: Name server to be used with freenom.com
+    Value: !Select [1, !GetAtt CCMHostedZone.NameServers]
+  NameServer3:
+    Description: Name server to be used with freenom.com
+    Value: !Select [2, !GetAtt CCMHostedZone.NameServers]
+  NameServer4:
+    Description: Name server to be used with freenom.com
+    Value: !Select [3, !GetAtt CCMHostedZone.NameServers]
+  PrivateKeyPairUsed:
+    Description: Auth
+    Value: !Ref AuthServerKeyPair

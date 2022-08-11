@@ -1,0 +1,332 @@
+AWSTemplateFormatVersion: 2010-09-09
+#################################################
+#Stack name: Cloud-Capacity-Manager
+#################################################
+Description: >
+  Version: 09042022_1940
+  Author: Tomasz Grzybowski
+  Project: Developing Auth application for high level resource provision and access control for cloud computing
+  Application name: Cloud Capacity Manager
+  Stack: Auth Server
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Route53 Configuration"
+        Parameters:
+          - DomainName
+      - Label:
+          default: "KeyPair Configuration"
+        Parameters:
+          - AuthServerKeyPair
+      - Label:
+          default: "Amplify Configuration"
+        Parameters:
+          - AppName
+          - AppDescription
+          - AccessToken
+          - RepoName
+          - RoleName
+      - Label:
+          default: "DynamoDB table name"
+        Parameters:
+          - TableName
+      - Label:
+          default: "S3 Configuration"
+        Parameters:
+          - S3BucketName
+    ParameterLabels:
+      S3BucketName:
+        default: "Specify unique name for your region, i.e. 'ccm-s3-bucket'"
+      DomainName:
+        default: "Specify a domain name for your web application, i.e. mywebapp.com"
+      AuthServerKeyPair:
+        default: "Choose existing keypair to be used for Private Instances"
+      AccessToken:
+        default: "Personal access token for GitHub"
+      AppName:
+        default: "Application name for Amplify"
+      AppDescription:
+        default: "Application description for Amplify"
+      RepoName:
+        default: "CCM Application repository"
+      RoleName:
+        default: "Name for Amplify App Role"
+      TableName:
+        default: "DynamoDB table name"
+Parameters:
+  S3BucketName:
+    AllowedPattern: "^[0-9a-z]+([0-9a-z-]*[0-9a-z])*$"
+    ConstraintDescription: "Bucket name can include numbers, lowercase letters, and hyphens (-). It cannot start or end with a hyphen (-)."
+    Default: "ccm-test-bucket"
+    Type: "String"
+  AccessToken:
+    NoEcho: true
+    Default: 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
+    Type: String
+    Description: Personal access token for GitHub
+  AppName:
+    Default: CCMApp
+    Type: String
+    Description: Application name for Amplify
+  AppDescription:
+    Default: Cloud Capacity Manager Amplify Application
+    Type: String
+    Description: Application description for Amplify
+  RepoName:
+    Default: Tomasz-Grzybowski/cloud-capacity-manager
+    Type: String
+    Description: CCM Application repository
+  AmplifyRoleName:
+    Default: amplify-ccm
+    Type: String
+    Description: Amplify Role Name
+  NameTagPrefix:
+    Default: 'cloud-capacity-manager'
+    Type: String
+    Description: Value to be used for Name tag
+  Customer:
+    Default: 'CU Coventry'
+    Type: String
+    Description: Value to be used for Customer tag
+  Task:
+    Default: 'Final Project'
+    Type: String
+    Description: Value to be used for Task tag
+  DomainName:
+    Default: 'tomasz.live'
+    Description: (FQDM, i.e. CCM.tk)
+    Type: String
+  TableName:
+    Default: 'ccm-test-table'
+    Description: Test dynamoDB table to test connection
+  AuthServerKeyPair:
+    Default: AuthServerKeyPair
+    Description: Name of key for use in private subnet
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Select an existing keypair for use with Auth Server
+Resources:
+#################################################
+# Route53
+#################################################
+  CCMHostedZone: 
+    Type: "AWS::Route53::HostedZone"
+    Properties: 
+     HostedZoneConfig: 
+        Comment: 'Hosted zone for Cloud Capacity Manager website'
+      Name: !Ref DomainName
+      HostedZoneTags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  route53-CCMHostedZone
+        - Key: 
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+# A Record
+# This will be done through Amplify with manual verification
+
+#################################################
+# Lambda
+#################################################
+
+  LambdaAssumeRoleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: AllowAssumeRole
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "sts:AssumeRole"
+                Resource: "arn:aws:iam::*:role/Cloud-Capacity-Manager-5uWFMs"
+        - PolicyName: AllowLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                Resource: "arn:aws:logs:eu-west-2:${AWS::AccountId}:*"
+              - Effect: "Allow"
+                Action:
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "arn:aws:logs:eu-west-2:${AWS::AccountId}:log-group:/aws/lambda/AssumeRoleForCapacityManager:*"
+  LambdaAssumeRoleFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: 
+      Role: !Ref LambdaAssumeRoleRole
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          import boto3
+          import json
+          import datetime
+          from json import JSONEncoder
+
+          class DateTimeEncoder(JSONEncoder):
+          #Override the default method
+          def default(self, obj):
+            if isinstance(obj, (datetime.date, datetime.datetime)):
+              return obj.isoformat()
+
+          def lambda_handler(event, context):
+            event = json.loads(event['body'])
+            sts_connection = boto3.client('sts')
+            acct_b = sts_connection.assume_role(
+              RoleArn=f"arn:aws:iam::{event['accountId']}:role/Cloud-Capacity-Manager-5uWFMs",
+              RoleSessionName="cross_acct_lambda",
+              ExternalId= event['externalId']
+            )
+    
+          ACCESS_KEY = acct_b['Credentials']['AccessKeyId']
+          SECRET_KEY = acct_b['Credentials']['SecretAccessKey']
+          SESSION_TOKEN = acct_b['Credentials']['SessionToken']
+
+          # create service client using the assumed role credentials
+          client = boto3.client(
+            'servicecatalog',
+            aws_access_key_id=ACCESS_KEY,
+            aws_secret_access_key=SECRET_KEY,
+            aws_session_token=SESSION_TOKEN,
+          )
+          response = DateTimeEncoder().encode(client.list_portfolios())
+
+          return response
+      Description: Generic Lambda function to assume a role from the customer account
+      TracingConfig:
+        Mode: Active
+#################################################
+# API Gateway - HTTP
+#################################################
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: Lambda Proxy
+      Description: Lambda proxy using quick create
+      ProtocolType: HTTP
+      Target: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaAssumeRoleFunction}/invocations'
+##################################################
+# DynamoDB
+##################################################
+  DocumentStore:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions: 
+        - AttributeName: "Value"
+          AttributeType: "S"
+      KeySchema: 
+        - AttributeName: "Id"
+          KeyType: "HASH"
+      TableClass: STANDARD
+      TableName: !Ref TableName
+      Tags: 
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  dynamodb-CCMTable
+        - Key: 
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+#######################################################
+# S3
+#######################################################
+S3Bucket:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: Retain #keeps the bucket in case of stack deletion
+    Properties:
+      BucketName: !Join
+        - "-"
+        - - !Ref S3BucketName
+          - ccm-test
+#######################################################
+### Amplify 
+#######################################################
+  AmplifyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: 
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - amplify.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        -  arn:aws:iam::aws:policy/AdministratorAccess-Amplify
+  CCMAmplifyApp:
+    Type: AWS::Amplify::App
+    Properties: 
+      AccessToken: !Ref AccessToken
+      Description: !Ref AppDescription
+      EnableBranchAutoDeletion: True
+      IAMServiceRole: !Ref AmplifyRole
+      Name: !Ref AppName
+      Repository: !RepoName
+      Tags:
+        - Key: Name
+          Value:
+            !Join
+            - '-'
+            - -  !Ref NameTagPrefix
+              -  securityGroup-EFSSG
+        - Key: Customer
+          Value: !Ref Customer
+        - Key: Task
+          Value: !Ref Task
+  AmplifyDomain:
+    Type: AWS::Amplify::Domain
+    Properties: 
+      AppId: !GetAtt CCMAmplifyApp.AppId
+      DomainName: !Ref DomainName
+      EnableAutoSubDomain: False
+      SubDomainSettings: 
+        - BranchName: main
+          Prefix: ccm
+Outputs:
+  S3DomainName:
+    Value: !Join ['', [https://, !GetAtt S3Bucket.DomainName]]
+    Description: S3 domain name to be used as $s3domain variable in head.inc.php for AxiomCloud website (for testing purposes)
+  AppServerHostname:
+    Description: URL address for application
+    Value: !Join ['', [https://ccm., !Ref DomainName]]
+  NameServer1:
+    Description: Name server to be used with domain registrar
+    Value: !Select [0, !GetAtt CCMHostedZone.NameServers]
+  NameServer2:
+    Description: Name server to be used with domain registrar
+    Value: !Select [1, !GetAtt CCMHostedZone.NameServers]
+  NameServer3:
+    Description: Name server to be used with domain registrar
+    Value: !Select [2, !GetAtt CCMHostedZone.NameServers]
+  NameServer4:
+    Description: Name server to be used with domain registrar
+    Value: !Select [3, !GetAtt CCMHostedZone.NameServers]
+  PrivateKeyPairUsed:
+    Description: Auth
+    Value: !Ref AuthServerKeyPair
+  RoleForAmplify:
+    Description: Role to be used in amplify configure
+    Value: !Ref RoleForAmplify
