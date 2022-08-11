@@ -150,7 +150,7 @@ yarn-debug.log*
 yarn-error.log*
 
 #amplify-do-not-edit-begin
-
+src/aws-exports.js
 node_modules/
 
 #amplify-do-not-edit-end
