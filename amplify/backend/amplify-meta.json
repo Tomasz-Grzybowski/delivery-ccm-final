@@ -1,0 +1,241 @@
+{
+  "providers": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-cloudcapacitymanager-dev-11155-authRole",
+      "UnauthRoleArn": "arn:aws:iam::575189954257:role/amplify-cloudcapacitymanager-dev-11155-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::575189954257:role/amplify-cloudcapacitymanager-dev-11155-authRole",
+      "Region": "us-east-1",
+      "DeploymentBucketName": "amplify-cloudcapacitymanager-dev-11155-deployment",
+      "UnauthRoleName": "amplify-cloudcapacitymanager-dev-11155-unauthRole",
+      "StackName": "amplify-cloudcapacitymanager-dev-11155",
+      "StackId": "arn:aws:cloudformation:us-east-1:575189954257:stack/amplify-cloudcapacitymanager-dev-11155/e125eea0-1777-11ed-b7bb-0afc423d7067",
+      "AmplifyAppId": "d218mi74uhy6gc",
+      "APIGatewayAuthURL": "https://s3.amazonaws.com/amplify-cloudcapacitymanager-dev-11155-deployment/amplify-cfn-templates/api/APIGatewayAuthStack.json",
+      "AuthTriggerTemplateURL": "https://s3.amazonaws.com/amplify-cloudcapacitymanager-dev-11155-deployment/amplify-cfn-templates/auth/auth-trigger-cloudformation-template.json"
+    }
+  },
+  "function": {
+    "ccmTestFunctionLambda": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda",
+      "dependsOn": [],
+      "lastBuildTimeStamp": "2022-08-09T00:19:14.848Z",
+      "lastBuildType": "PROD",
+      "lastPackageTimeStamp": "2022-08-09T00:19:14.997Z",
+      "distZipFilename": "ccmTestFunctionLambda-54433052377a53623838-build.zip",
+      "s3Bucket": {
+        "deploymentBucketName": "amplify-cloudcapacitymanager-dev-11155-deployment",
+        "s3Key": "amplify-builds/ccmTestFunctionLambda-54433052377a53623838-build.zip"
+      },
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-cloudcapacitymanager-dev-11155-deployment/amplify-cfn-templates/function/ccmTestFunctionLambda-cloudformation-template.json",
+        "logicalId": "functionccmTestFunctionLambda"
+      },
+      "lastPushTimeStamp": "2022-08-09T00:19:18.018Z"
+    },
+    "ccmFunctionListUsers": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda",
+      "dependsOn": [],
+      "lastBuildTimeStamp": "2022-08-09T00:19:14.853Z",
+      "lastBuildType": "PROD",
+      "lastPackageTimeStamp": "2022-08-09T00:19:15.002Z",
+      "distZipFilename": "ccmFunctionListUsers-6a746764384f4d334c54-build.zip",
+      "s3Bucket": {
+        "deploymentBucketName": "amplify-cloudcapacitymanager-dev-11155-deployment",
+        "s3Key": "amplify-builds/ccmFunctionListUsers-6a746764384f4d334c54-build.zip"
+      },
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-cloudcapacitymanager-dev-11155-deployment/amplify-cfn-templates/function/ccmFunctionListUsers-cloudformation-template.json",
+        "logicalId": "functionccmFunctionListUsers"
+      },
+      "lastPushTimeStamp": "2022-08-09T00:19:18.025Z"
+    },
+    "cloudcapacitymanager5100b3b8PostConfirmation": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda",
+      "lastBuildTimeStamp": "2022-08-09T00:19:14.857Z",
+      "lastBuildType": "PROD",
+      "lastPackageTimeStamp": "2022-08-09T00:19:15.578Z",
+      "distZipFilename": "cloudcapacitymanager5100b3b8PostConfirmation-4e425973542f376d546f-build.zip",
+      "s3Bucket": {
+        "deploymentBucketName": "amplify-cloudcapacitymanager-dev-11155-deployment",
+        "s3Key": "amplify-builds/cloudcapacitymanager5100b3b8PostConfirmation-4e425973542f376d546f-build.zip"
+      },
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-cloudcapacitymanager-dev-11155-deployment/amplify-cfn-templates/function/cloudcapacitymanager5100b3b8PostConfirmation-cloudformation-template.json",
+        "logicalId": "functioncloudcapacitymanager5100b3b8PostConfirmation"
+      },
+      "lastPushTimeStamp": "2022-08-09T00:19:18.031Z"
+    },
+    "CCMAccountsUsers": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda",
+      "dependsOn": [
+        {
+          "category": "storage",
+          "resourceName": "CCMAccounts",
+          "attributes": [
+            "Name",
+            "Arn",
+            "StreamArn"
+          ]
+        }
+      ],
+      "lastBuildTimeStamp": "2022-08-09T00:19:14.862Z",
+      "lastBuildType": "PROD",
+      "lastPackageTimeStamp": "2022-08-09T00:19:15.008Z",
+      "distZipFilename": "CCMAccountsUsers-612f6f61376e496b705a-build.zip",
+      "s3Bucket": {
+        "deploymentBucketName": "amplify-cloudcapacitymanager-dev-11155-deployment",
+        "s3Key": "amplify-builds/CCMAccountsUsers-612f6f61376e496b705a-build.zip"
+      },
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-cloudcapacitymanager-dev-11155-deployment/amplify-cfn-templates/function/CCMAccountsUsers-cloudformation-template.json",
+        "logicalId": "functionCCMAccountsUsers"
+      },
+      "lastPushTimeStamp": "2022-08-09T00:19:18.042Z"
+    },
+    "getSignedUrl": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda",
+      "lastBuildTimeStamp": "2022-08-09T00:19:14.866Z",
+      "lastBuildType": "PROD",
+      "lastPackageTimeStamp": "2022-08-09T00:19:14.992Z",
+      "distZipFilename": "getSignedUrl-4d6e5248306975327861-build.zip",
+      "s3Bucket": {
+        "deploymentBucketName": "amplify-cloudcapacitymanager-dev-11155-deployment",
+        "s3Key": "amplify-builds/getSignedUrl-4d6e5248306975327861-build.zip"
+      },
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-cloudcapacitymanager-dev-11155-deployment/amplify-cfn-templates/function/getSignedUrl-cloudformation-template.json",
+        "logicalId": "functiongetSignedUrl"
+      },
+      "lastPushTimeStamp": "2022-08-09T00:19:18.044Z"
+    }
+  },
+  "auth": {
+    "cloudcapacitymanager5100b3b8": {
+      "service": "Cognito",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [
+        {
+          "category": "function",
+          "resourceName": "cloudcapacitymanager5100b3b8PostConfirmation",
+          "triggerProvider": "Cognito",
+          "attributes": [
+            "Arn",
+            "Name"
+          ]
+        }
+      ],
+      "customAuth": false,
+      "frontendAuthConfig": {
+        "socialProviders": [],
+        "usernameAttributes": [
+          "EMAIL"
+        ],
+        "signupAttributes": [
+          "EMAIL",
+          "FAMILY_NAME",
+          "GIVEN_NAME"
+        ],
+        "passwordProtectionSettings": {
+          "passwordPolicyMinLength": 8,
+          "passwordPolicyCharacters": []
+        },
+        "mfaConfiguration": "OFF",
+        "mfaTypes": [
+          "SMS"
+        ],
+        "verificationMechanisms": [
+          "EMAIL"
+        ]
+      },
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-cloudcapacitymanager-dev-11155-deployment/amplify-cfn-templates/auth/cloudcapacitymanager5100b3b8-cloudformation-template.json",
+        "logicalId": "authcloudcapacitymanager5100b3b8"
+      },
+      "lastPushTimeStamp": "2022-08-09T00:19:18.092Z"
+    }
+  },
+  "api": {
+    "ccmGTestApiLambda": {
+      "service": "API Gateway",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [
+        {
+          "category": "function",
+          "resourceName": "ccmTestFunctionLambda",
+          "attributes": [
+            "Name",
+            "Arn"
+          ]
+        },
+        {
+          "category": "function",
+          "resourceName": "CCMAccountsUsers",
+          "attributes": [
+            "Name",
+            "Arn"
+          ]
+        },
+        {
+          "category": "function",
+          "resourceName": "ccmFunctionListUsers",
+          "attributes": [
+            "Name",
+            "Arn"
+          ]
+        },
+        {
+          "category": "function",
+          "resourceName": "getSignedUrl",
+          "attributes": [
+            "Name",
+            "Arn"
+          ]
+        }
+      ],
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-cloudcapacitymanager-dev-11155-deployment/amplify-cfn-templates/api/ccmGTestApiLambda-cloudformation-template.json",
+        "logicalId": "apiccmGTestApiLambda"
+      },
+      "lastPushTimeStamp": "2022-08-09T00:19:18.444Z"
+    }
+  },
+  "storage": {
+    "CcmContentBucket": {
+      "service": "S3",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [],
+      "lastPushTimeStamp": "2022-08-09T00:19:18.067Z",
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-cloudcapacitymanager-dev-11155-deployment/amplify-cfn-templates/storage/cloudformation-template.json",
+        "logicalId": "storageCcmContentBucket"
+      }
+    },
+    "CCMAccounts": {
+      "service": "DynamoDB",
+      "providerPlugin": "awscloudformation",
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-cloudcapacitymanager-dev-11155-deployment/amplify-cfn-templates/storage/CCMAccounts-cloudformation-template.json",
+        "logicalId": "storageCCMAccounts"
+      },
+      "lastPushTimeStamp": "2022-08-09T00:19:18.049Z"
+    }
+  },
+  "hosting": {
+    "amplifyhosting": {
+      "service": "amplifyhosting",
+      "type": "cicd",
+      "lastPushTimeStamp": "2022-08-09T00:12:30.233Z",
+      "cicd": "cicd"
+    }
+  }
+}

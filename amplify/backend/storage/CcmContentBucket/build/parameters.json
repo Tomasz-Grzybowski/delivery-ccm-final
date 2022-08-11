@@ -1,0 +1,30 @@
+{
+  "bucketName": "cloudcapacitymanagerfc07548e99a644038a003b0d566",
+  "selectedGuestPermissions": [],
+  "selectedAuthenticatedPermissions": [
+    "s3:PutObject",
+    "s3:GetObject",
+    "s3:ListBucket"
+  ],
+  "unauthRoleName": {
+    "Ref": "UnauthRoleName"
+  },
+  "authRoleName": {
+    "Ref": "AuthRoleName"
+  },
+  "s3PrivatePolicy": "Private_policy_f7ae54a4",
+  "s3ProtectedPolicy": "Protected_policy_f7ae54a4",
+  "s3PublicPolicy": "Public_policy_f7ae54a4",
+  "s3ReadPolicy": "read_policy_f7ae54a4",
+  "s3UploadsPolicy": "Uploads_policy_f7ae54a4",
+  "authPolicyName": "s3_amplify_f7ae54a4",
+  "unauthPolicyName": "s3_amplify_f7ae54a4",
+  "AuthenticatedAllowList": "ALLOW",
+  "GuestAllowList": "DISALLOW",
+  "s3PermissionsAuthenticatedPrivate": "s3:PutObject,s3:GetObject",
+  "s3PermissionsAuthenticatedProtected": "s3:PutObject,s3:GetObject",
+  "s3PermissionsAuthenticatedPublic": "s3:PutObject,s3:GetObject",
+  "s3PermissionsAuthenticatedUploads": "s3:PutObject",
+  "s3PermissionsGuestPublic": "DISALLOW",
+  "s3PermissionsGuestUploads": "DISALLOW"
+}
